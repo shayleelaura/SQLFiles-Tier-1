@@ -150,10 +150,23 @@ The output of facility name and total revenue, sorted by revenue. Remember
 that there's a different cost for guests and members! */
 
 /* Q11: Produce a report of members and who recommended them in alphabetic surname,firstname order */
-
+SELECT surname, firstname, recommendedby
+FROM Members
+WHERE recommendedby != 0
+ORDER BY surname ASC
 
 /* Q12: Find the facilities with their usage by member, but not guests */
-
+SELECT Bookings.facid, Facilities.name, COUNT(memid) as amountused
+FROM Bookings
+JOIN Facilities
+ON Bookings.facid = Facilities.facid
+GROUP BY facid
+ORDER BY amountused DESC 
 
 /* Q13: Find the facilities usage by month, but not guests */
-
+SELECT Bookings.facid, Facilities.name, COUNT(memid) as amountused, EXTRACT(MONTH from Bookings.starttime) as month
+FROM Bookings
+INNER JOIN Facilities
+ON Bookings.facid = Facilities.facid
+GROUP BY month, facid
+ORDER BY facid

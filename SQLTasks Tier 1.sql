@@ -117,6 +117,23 @@ the guest user's ID is always 0. Include in your output the name of the
 facility, the name of the member formatted as a single column, and the cost.
 Order by descending cost, and do not use any subqueries. */
 
+SELECT DISTINCT CONCAT( m.firstname, ' ', m.surname ) AS fullname, f.name, f.membercost
+FROM Bookings AS b
+INNER JOIN Facilities AS f 
+	ON b.facid = f.facid
+INNER JOIN Members AS m 
+	ON b.memid = m.memid
+CASE WHEN (b.memid = 0 AND f.guestcost*b.slots > 30)
+THEN f.guestcost*b.slots
+WHEN (b.memid >0 AND f.membercost*b.slots >30)
+THEN f.membercost*b.slots
+ELSE Null
+END AS cost
+WHERE date(starttime) = '2012-09-14'
+ORDER BY cost DESC
+
+
+OLD DISCARD CODE:
 SELECT DISTINCT CONCAT( m.firstname, ' ', m.surname ) AS fullname, f.name
 FROM Bookings AS b
 INNER JOIN Facilities AS f 
@@ -127,7 +144,26 @@ WHERE date(starttime) = '2012-09-14' AND (f.membercost*b.slots > 30 OR f.guestco
 ORDER BY f.membercost DESC
 
 /* Q9: This time, produce the same result as in Q8, but using a subquery. */
+INNER JOIN (
 
+SELECT book.memid, fac.name,
+CASE WHEN (
+book.memid >0
+AND fac.membercost * book.slots >30
+)
+THEN fac.membercost * book.slots
+WHEN (
+book.memid =0
+AND fac.guestcost * book.slots >30
+)
+THEN fac.guestcost * book.slots
+ELSE NULL
+END AS cost
+FROM Bookings book
+JOIN Facilities fac ON book.facid = fac.facid
+WHERE book.starttime LIKE '2012-09-14%'
+ORDER BY cost DESC
+) AS costtotal ON mem.memid = costtotal.memid
 
 /* PART 2: SQLite
 /* We now want you to jump over to a local instance of the database on your machine. 
@@ -148,6 +184,21 @@ QUESTIONS:
 /* Q10: Produce a list of facilities with a total revenue less than 1000.
 The output of facility name and total revenue, sorted by revenue. Remember
 that there's a different cost for guests and members! */
+
+SELECT sub.name, SUM( sub.revenue ) AS total_rev
+FROM (
+SELECT fac.name,
+CASE WHEN book.memid >0
+THEN book.slots * membercost
+ELSE book.slots * guestcost
+END AS revenue
+FROM Bookings book
+JOIN Facilities fac ON book.facid = fac.facid
+) AS sub
+GROUP BY sub.name
+HAVING SUM( sub.revenue ) <1000
+ORDER BY total_rev
+
 
 /* Q11: Produce a report of members and who recommended them in alphabetic surname,firstname order */
 SELECT surname, firstname, recommendedby
